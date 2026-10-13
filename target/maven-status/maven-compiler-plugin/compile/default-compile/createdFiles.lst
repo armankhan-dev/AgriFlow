@@ -1,0 +1,16 @@
+com\agriflow\farm\FarmRepository.class
+com\agriflow\dsa\DsaController$SampleRequest.class
+com\agriflow\farm\FarmController$SensorRequest.class
+com\agriflow\dsa\DsaService$1Node.class
+com\agriflow\farm\FarmController.class
+com\agriflow\config\DemoData.class
+com\agriflow\farm\FarmController$SensorView.class
+com\agriflow\farm\FarmController$FarmRequest.class
+com\agriflow\sensor\SensorReadingRepository.class
+com\agriflow\sensor\SensorReading.class
+com\agriflow\dsa\DsaService.class
+com\agriflow\AgriflowApplication.class
+com\agriflow\dsa\DsaService$Edge.class
+com\agriflow\farm\Farm.class
+com\agriflow\dsa\DsaController.class
+com\agriflow\dsa\DsaController$FlowRequest.class

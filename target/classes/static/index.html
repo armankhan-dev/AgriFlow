@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#173d32">
+  <title>AgriFlow | Field operations</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/field.css">
+  <link rel="stylesheet" href="/analytics-theme.css">
+  <script type="importmap">
+    {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.172.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.172.0/examples/jsm/"}}
+  </script>
+  <script type="module" src="/field3d.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js" defer></script>
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <a class="brand" href="#overview" aria-label="AgriFlow overview"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 48 56" role="presentation"><path class="logo-drop" d="M24 3C18 13 7 23 7 34a17 17 0 0 0 34 0C41 23 30 13 24 3Z"/><path class="logo-leaf" d="M23 27c-8-1-11-6-10-12 7 0 12 4 12 11M25 27c1-8 6-12 13-11 0 7-5 12-12 13"/><path class="logo-stem" d="M24 25v10"/><path class="logo-wave" d="M12 37c4-3 7-3 12 0s8 3 12 0M12 43c4-3 7-3 12 0s8 3 12 0"/></svg></span><span class="brand-name">AgriFlow<small>FIELD INTELLIGENCE</small></span></a>
+      <nav class="main-nav" aria-label="Main navigation">
+        <button class="nav-link active" data-view="overview">Overview</button>
+        <button class="nav-link" data-view="farms">Farms <span class="nav-count" id="farm-nav-count">0</span></button>
+        <button class="nav-link" data-view="sensors">Monitoring</button>
+        <button class="nav-link" data-view="crops">Crop health</button>
+        <button class="nav-link" data-view="lab">DSA lab</button>
+      </nav>
+      <div class="top-actions"><span class="live-indicator"><i></i> LIVE</span><span class="today" id="today-label"></span><button class="icon-button" id="refresh-button" title="Refresh data" aria-label="Refresh data">↻</button><span class="avatar" aria-label="Jordan Miller">JM</span></div>
+      <span id="page-crumb" hidden>Overview</span>
+    </header>
+
+    <main class="main-area">
+      <div class="workspace-bar"><div class="workspace-farm"><span class="workspace-mark">▦</span><label class="select-wrap"><select id="farm-select" aria-label="Select farm"><option>Loading farms…</option></select></label><span class="workspace-location" id="selected-location">Central Valley</span><span class="workspace-divider"></span><span class="workspace-zone">All fields <span>⌄</span></span></div><button class="button button-dark" data-goto="sensors"><span class="button-icon">✎</span> Log activity</button></div>
+
+      <section class="view active" id="view-overview">
+        <div class="view-heading"><div><div class="eyebrow accent-eyebrow">FIELD OPERATIONS <span>·</span> CENTRAL VALLEY</div><h1>Good morning, Jordan<span>.</span></h1><p class="subheading">Your farms at a glance. Conditions are updated from the latest field observations.</p></div><button class="button button-outline" data-open-farm><span>+</span> Add farm</button></div>
+
+        <div class="overview-layout">
+          <aside class="zone-column">
+            <section class="panel zone-panel"><div class="panel-heading"><div><div class="eyebrow">FIELD CONDITIONS</div><h2>Farm network</h2></div><button class="quiet-link" data-goto="farms">Manage <span>→</span></button></div><div id="overview-farms" class="zone-list"><div class="loading-row">Loading farms…</div></div><button class="panel-footer-link" data-goto="farms">View all farms <span>→</span></button></section>
+            <section class="insight-panel"><div class="insight-top"><span class="insight-spark">✳</span><span class="eyebrow">FIELD INSIGHT</span></div><h3 id="insight-title">Irrigation watch</h3><p id="insight-copy">Checking current soil moisture across your operation…</p><button class="text-link" data-goto="sensors">Review observations <span>→</span></button></section>
+            <section class="network-stat panel"><div><span class="eyebrow">MANAGED LAND</span><strong><span id="metric-area">—</span><small>ha</small></strong></div><span class="network-icon">↗</span><p><b id="metric-farms">—</b> active farm locations</p></section>
+          </aside>
+
+          <div class="field-column">
+            <section class="field-map" aria-label="Interactive farm visualization">
+              <canvas id="field-canvas" class="field-canvas" aria-label="Interactive three-dimensional farm model"></canvas>
+              <div class="field-map-top"><div class="visual-controls"><span class="photo-tag"><i></i> 3D FIELD MODEL</span><button class="scene-control" id="scene-reset" type="button" title="Reset 3D view" aria-label="Reset 3D view">⟳</button><button class="scene-control" id="scene-motion" type="button" title="Pause scene animation" aria-label="Pause scene animation" aria-pressed="false">Ⅱ</button></div><span class="map-weather">☀ <b id="field-temperature">24°C</b><span>Mostly sunny</span></span></div>
+              <div class="field-markers" id="field-markers"></div>
+              <div class="irrigation-float"><div class="irrigation-heading"><span class="irrigation-pin">⌖</span><span><strong id="active-farm-name">Selected farm</strong><small id="active-farm-status">Soil moisture</small></span><b class="float-moisture" id="active-farm-moisture">—%</b></div><div class="moisture-meter"><i id="active-moisture-bar"></i></div><div class="irrigation-actions"><span>Moisture level</span><button class="irrigation-button" id="irrigation-button">Preview irrigation plan <span>→</span></button></div></div>
+              <div class="field-map-caption"><strong id="field-crop-name">Growing fields</strong><span id="field-location-caption">Central Valley <b>·</b> Updated just now</span></div>
+            </section>
+            <div class="field-support-grid">
+              <section class="panel health-strip"><div class="panel-heading"><div><div class="eyebrow">SOIL MOISTURE</div><h2>Operation average</h2></div><span class="health-state" id="average-status">—</span></div><div class="health-strip-main"><div class="health-mini-gauge"><span id="metric-moisture">—%</span><small>current</small></div><div class="health-strip-copy"><div class="mini-track"><i id="average-moisture-bar"></i></div><p>Target band <b>35–55%</b></p><button class="quiet-link" data-goto="sensors">Open monitoring <span>→</span></button></div></div></section>
+              <section class="panel sensor-panel"><div class="panel-heading"><div><div class="eyebrow">FROM THE FIELD</div><h2>Latest readings</h2></div><span class="small-live"><i></i> RECENT</span></div><div id="overview-readings" class="reading-list"><div class="loading-row">Waiting for sensor data…</div></div><button class="panel-footer-link" data-goto="sensors">Open monitoring <span>→</span></button></section>
+            </div>
+          </div>
+
+          <aside class="health-column">
+            <section class="panel summary-panel"><div class="panel-heading"><h2>Field summary</h2><span class="summary-date">TODAY</span></div><div class="moisture-gauge" id="moisture-gauge"><div class="gauge-inner"><strong id="gauge-moisture">—%</strong><span>soil moisture</span></div></div><div class="summary-metrics"><div class="summary-metric"><span class="metric-symbol symbol-leaf">◉</span><span>Active farms</span><strong id="summary-farms">—</strong></div><div class="summary-metric"><span class="metric-symbol symbol-water">⌁</span><span>Daily water need</span><strong id="summary-water">—</strong></div><div class="summary-metric"><span class="metric-symbol symbol-temp">°</span><span>Latest temperature</span><strong id="summary-temp">—</strong></div></div></section>
+            <section class="panel water-panel"><div class="panel-heading"><div><div class="eyebrow">WATER STATUS</div><h2>Demand planning</h2></div><span class="water-drop">◌</span></div><div class="water-total"><strong id="water-demand-total">—</strong><span>L / day</span></div><div class="water-track"><i></i></div><p>Estimated crop demand across registered farms.</p><button class="text-link" data-goto="lab">Optimize distribution <span>→</span></button></section>
+            <button class="yield-link" data-goto="crops"><span class="yield-icon">↗</span><span><small>CROP HEALTH</small><strong>View crop conditions</strong></span><span class="yield-arrow">→</span></button>
+          </aside>
+        </div>
+        <footer class="page-footer"><span>AGRIFLOW FIELD INTELLIGENCE</span><span>Measurements reflect the latest saved sensor records.</span></footer>
+      </section>
+
+      <section class="view" id="view-farms">
+        <div class="welcome-row page-title-row"><div><div class="eyebrow accent-eyebrow">LAND & CULTIVATION</div><h1>Your farms<span>.</span></h1><p class="subheading">Keep locations, crops, and field conditions in one place.</p></div><button class="button button-dark" data-open-farm><span>+</span> Add a farm</button></div>
+        <div class="toolbar"><label class="search-field"><span>⌕</span><input id="farm-filter" type="search" placeholder="Search farms, crops, locations" aria-label="Search farms"></label><span class="toolbar-count" id="farm-count-label">0 farms</span></div>
+        <div class="panel table-panel"><div class="table-scroll"><table><thead><tr><th>FARM / LOCATION</th><th>CROP</th><th>AREA</th><th>SOIL MOISTURE</th><th>WATER NEED</th><th>STATUS</th><th></th></tr></thead><tbody id="farm-table-body"><tr><td colspan="7" class="loading-row">Loading farms…</td></tr></tbody></table></div></div>
+        <footer class="page-footer"><span>FARM RECORDS</span><span>Changes are stored in the AgriFlow database.</span></footer>
+      </section>
+
+      <section class="view" id="view-crops">
+        <div class="welcome-row page-title-row"><div><div class="eyebrow accent-eyebrow">CROP & SOIL MONITORING</div><h1>Crop health<span>.</span></h1><p class="subheading">Field condition indicators based on the latest recorded soil moisture.</p></div><span class="live-indicator large-live"><i></i> USING LATEST OBSERVATIONS</span></div>
+        <div class="tracker-filters panel" aria-label="Tracker filters">
+          <label>Year<select id="tracker-year"><option value="all">All years</option></select></label>
+          <label>Month<select id="tracker-month"><option value="all">All months</option><option value="0">January</option><option value="1">February</option><option value="2">March</option><option value="3">April</option><option value="4">May</option><option value="5">June</option><option value="6">July</option><option value="7">August</option><option value="8">September</option><option value="9">October</option><option value="10">November</option><option value="11">December</option></select></label>
+          <label>Crop<select id="tracker-crop"><option value="all">All crops</option></select></label>
+          <label>Farm<select id="tracker-farm"><option value="all">All farms</option></select></label>
+          <label>Health status<select id="tracker-health"><option value="all">All statuses</option><option value="healthy">Healthy</option><option value="warning">Needs attention</option><option value="critical">Critical</option></select></label>
+          <label>Region<select id="tracker-region"><option value="all">All regions</option></select></label>
+        </div>
+        <div class="tracker-kpis" id="tracker-kpis">
+          <article class="tracker-kpi"><div><span>ACTIVE FARMS</span><i>⌂</i></div><strong id="tracker-kpi-farms">—</strong><small>In selected region</small></article>
+          <article class="tracker-kpi"><div><span>MANAGED LAND</span><i>▱</i></div><strong><span id="tracker-kpi-hectares">—</span><small>ha</small></strong><small>Across selected farms</small></article>
+          <article class="tracker-kpi"><div><span>AVG. SOIL MOISTURE</span><i>◌</i></div><strong><span id="tracker-kpi-moisture">—</span><small>%</small></strong><small>Latest farm readings</small></article>
+          <article class="tracker-kpi"><div><span>WATER DEMAND</span><i>⌁</i></div><strong><span id="tracker-kpi-water">—</span><small>L/day</small></strong><small>Estimated crop need</small></article>
+          <article class="tracker-kpi"><div><span>ATTENTION NEEDED</span><i>!</i></div><strong id="tracker-kpi-alerts">—</strong><small>Below 30% moisture</small></article>
+        </div>
+        <div class="tracker-chart-grid">
+          <section class="panel tracker-chart moisture-health-chart"><div class="tracker-chart-heading"><div><span class="eyebrow">FIELD CONDITION</span><h2>Moisture health index</h2></div><span class="chart-period">CURRENT</span></div><div class="health-chart-wrap"><canvas id="tracker-health-chart" aria-label="Moisture health index gauge"></canvas><div class="health-chart-center"><strong id="tracker-health-value">—%</strong><span>Moisture index</span></div></div><div class="chart-footnote"><span><i class="legend-dot legend-green"></i>Healthy range</span><span><i class="legend-dot legend-yellow"></i>Watch range</span><span><i class="legend-dot legend-red"></i>Low moisture</span></div></section>
+          <section class="panel tracker-chart region-chart"><div class="tracker-chart-heading"><div><span class="eyebrow">FIELD COMPARISON</span><h2>Moisture by farm</h2></div><span class="chart-unit">%</span></div><div class="chart-canvas-wrap"><canvas id="tracker-farm-chart" aria-label="Soil moisture comparison by farm"></canvas></div></section>
+          <section class="panel tracker-chart reason-chart"><div class="tracker-chart-heading"><div><span class="eyebrow">CULTIVATION MIX</span><h2>Farms by crop</h2></div><span class="chart-unit">FARMS</span></div><div class="crop-chart-layout"><div class="crop-chart-canvas"><canvas id="tracker-crop-chart" aria-label="Farm distribution by crop"></canvas></div><div class="crop-chart-legend" id="tracker-crop-legend"></div></div></section>
+          <section class="panel tracker-chart trend-chart"><div class="tracker-chart-heading"><div><span class="eyebrow">SENSOR HISTORY</span><h2>Soil moisture trend</h2></div><span class="chart-unit">LAST 30 READINGS</span></div><div class="chart-canvas-wrap trend-canvas-wrap"><canvas id="tracker-trend-chart" aria-label="Soil moisture trend from recent sensor observations"></canvas></div></section>
+          <section class="panel tracker-chart water-chart"><div class="tracker-chart-heading"><div><span class="eyebrow">RESOURCE PLANNING</span><h2>Water demand by farm</h2></div><span class="chart-unit">L / DAY</span></div><div class="chart-canvas-wrap"><canvas id="tracker-water-chart" aria-label="Estimated daily water demand by farm"></canvas></div></section>
+        </div>
+        <div class="panel crop-table-panel tracker-table-panel"><div class="panel-heading"><div><div class="eyebrow">CULTIVATION RECORDS</div><h2>Farm conditions</h2></div><button class="quiet-link" data-goto="farms">Manage farms <span>→</span></button></div><div class="table-scroll"><table><thead><tr><th>FARM</th><th>PRIMARY CROP</th><th>REGION</th><th>SOIL MOISTURE</th><th>DAILY WATER NEED</th><th>CONDITION</th></tr></thead><tbody id="crop-table-body"><tr><td colspan="6" class="loading-row">Loading crop conditions…</td></tr></tbody></table></div></div>
+      </section>
+
+      <section class="view" id="view-sensors">
+        <div class="welcome-row page-title-row"><div><div class="eyebrow accent-eyebrow">CONTINUOUS OBSERVATIONS</div><h1>Monitoring<span>.</span></h1><p class="subheading">Recent readings from soil and weather sensors across your farms.</p></div><span class="live-indicator large-live"><i></i> RECEIVING DATA</span></div>
+        <div class="sensor-summary-grid"><div class="sensor-summary"><span>Readings stored</span><strong id="sensor-total">—</strong><small>Most recent 30 shown</small></div><div class="sensor-summary"><span>Latest temperature</span><strong id="sensor-temp">—</strong><small>Across reporting farms</small></div><div class="sensor-summary"><span>Latest rainfall</span><strong id="sensor-rain">—</strong><small>Recorded precipitation</small></div><div class="sensor-summary"><span>Stream sampling</span><strong>Reservoir</strong><small>Uniform representative sample</small></div></div>
+        <div class="sensor-layout"><section class="panel sensor-table-panel"><div class="panel-heading"><div><div class="eyebrow">OBSERVATION LOG</div><h2>Recent measurements</h2></div><span class="table-live"><i></i> AUTO-REFRESH READY</span></div><div class="table-scroll"><table><thead><tr><th>FARM</th><th>SOIL MOISTURE</th><th>TEMPERATURE</th><th>RAINFALL</th><th>TIME</th></tr></thead><tbody id="sensor-table-body"><tr><td colspan="5" class="loading-row">Loading observations…</td></tr></tbody></table></div></section>
+          <section class="panel capture-panel"><div class="eyebrow">MANUAL CAPTURE</div><h2>Log a reading</h2><p>Record an observation from a field sensor.</p><form id="sensor-form" class="stacked-form"><label>Farm<select id="sensor-farm" name="farmId" required></select></label><div class="two-fields"><label>Moisture %<input name="moisture" type="number" min="0" max="100" step="0.1" value="32" required></label><label>Temp °C<input name="temperature" type="number" step="0.1" value="24" required></label></div><label>Rainfall mm<input name="rainfall" type="number" min="0" step="0.1" value="0" required></label><button class="button button-dark button-full" type="submit">Save observation <span>→</span></button></form></section></div>
+      </section>
+
+      <section class="view" id="view-lab">
+        <div class="welcome-row page-title-row"><div><div class="eyebrow accent-eyebrow">ALGORITHMS IN PRACTICE</div><h1>Algorithm lab<span>.</span></h1><p class="subheading">Run data-structure demonstrations against agricultural data.</p></div><span class="lab-version">JAVA / SPRING BOOT</span></div>
+        <div class="module-strip"><span class="module-label">COURSE MODULES</span><span>M1 Strings</span><span>M2 Suffix structures</span><span>M3 Dynamic programming</span><span>M4 Network flow</span><span>M5 Approximation</span><span>M6 Randomized</span></div>
+        <div class="lab-grid">
+          <section class="panel lab-card search-card"><div class="lab-card-heading"><span class="lab-index">01</span><div><div class="eyebrow">M1 · M2</div><h2>Crop & report search</h2></div></div><p>Find crop names, disease terms, or repeated phrases in a report.</p><form id="search-form" class="stacked-form"><label>Search algorithm<select name="algorithm"><option value="KMP">KMP pattern matching</option><option value="Z">Z-function</option><option value="RABIN_KARP">Rabin–Karp</option><option value="AHO_CORASICK">Aho–Corasick (multiple terms)</option><option value="SUFFIX_ARRAY">Suffix array index</option></select></label><label>Pattern or comma-separated terms<input name="query" value="blight" required></label><label>Agricultural report<textarea name="text" rows="5" required>Tomato blight can spread after warm, humid weather. Monitor leaves for early blight and maintain steady soil moisture. Resistant tomato varieties reduce disease pressure.</textarea></label><button class="button button-dark" type="submit">Run search <span>→</span></button></form><div class="result-box" id="search-result" aria-live="polite">Results will appear here.</div></section>
+          <section class="panel lab-card compare-card"><div class="lab-card-heading"><span class="lab-index index-blue">02</span><div><div class="eyebrow">M3 · DP</div><h2>Sequence comparison</h2></div></div><p>Compare crop or disease terms with edit distance and local alignment.</p><form id="compare-form" class="stacked-form"><label>Sequence / term A<input name="left" value="tomato blight" required></label><label>Sequence / term B<input name="right" value="tomato bright" required></label><button class="button button-outline" type="submit">Compare sequences <span>→</span></button></form><div class="compare-results" id="compare-result"><div><span>EDIT DISTANCE</span><strong>—</strong></div><div><span>LOCAL ALIGNMENT</span><strong>—</strong></div><div><span>COMMON RUN</span><strong>—</strong></div></div></section>
+          <section class="panel lab-card flow-card"><div class="lab-card-heading"><span class="lab-index index-yellow">03</span><div><div class="eyebrow">M4 · NETWORK FLOW</div><h2>Irrigation capacity</h2></div></div><p>Find the maximum water flow and the minimum cut through a pipeline network.</p><form id="flow-form" class="stacked-form"><div class="three-fields"><label>Nodes<input name="nodes" type="number" min="2" value="6" required></label><label>Source<input name="source" type="number" min="0" value="0" required></label><label>Farm sink<input name="sink" type="number" min="0" value="5" required></label></div><label>Pipeline edges <small>(from, to, capacity)</small><textarea name="edges" rows="6" required>0,1,16
+0,2,13
+1,2,10
+2,1,4
+1,3,12
+3,2,9
+2,4,14
+4,3,7
+3,5,20
+4,5,4</textarea></label><button class="button button-dark" type="submit">Optimize water flow <span>→</span></button></form><div class="result-box" id="flow-result" aria-live="polite">Max flow and min-cut results will appear here.</div></section>
+          <section class="panel lab-card sample-card"><div class="lab-card-heading"><span class="lab-index index-red">04</span><div><div class="eyebrow">M6 · RANDOMIZED</div><h2>Sensor stream sample</h2></div></div><p>Use reservoir sampling to keep a representative sample from a continuous stream.</p><form id="sample-form" class="stacked-form"><label>Stream values <small>(comma-separated)</small><textarea name="stream" rows="4">18, 21, 19, 24, 31, 28, 22, 35, 27, 20, 25, 32, 29, 23, 26</textarea></label><label>Sample size<input name="size" type="number" min="0" value="5" required></label><button class="button button-outline" type="submit">Take random sample <span>→</span></button></form><div class="result-box" id="sample-result" aria-live="polite">Sample values will appear here.</div></section>
+        </div>
+        <div class="module-note"><strong>Next in the DSA roadmap</strong><span>Bitmask crop planning, SAT constraint encoding, vertex-cover approximation, parallel scan/reduce, and Miller–Rabin are outlined as extension areas for the coursework modules.</span></div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="farm-dialog" class="farm-dialog"><form id="farm-form" method="dialog"><div class="dialog-heading"><div><div class="eyebrow accent-eyebrow">NEW RECORD</div><h2>Add a farm</h2></div><button class="dialog-close" type="button" aria-label="Close dialog">×</button></div><div class="dialog-grid"><label>Farm name<input name="name" placeholder="e.g. Riverbend Farm" required></label><label>Location<input name="location" placeholder="Town, region" required></label><label>Primary crop<input name="crop" placeholder="e.g. Wheat" required></label><label>Area (hectares)<input name="hectares" type="number" min="0.1" step="0.1" value="24" required></label><label>Soil moisture %<input name="soilMoisture" type="number" min="0" max="100" step="0.1" value="36" required></label><label>Daily water need (L)<input name="waterNeed" type="number" min="0" step="100" value="12000" required></label></div><div class="dialog-actions"><button class="button button-outline" type="button" id="cancel-farm">Cancel</button><button class="button button-dark" type="submit">Save farm <span>→</span></button></div></form></dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
